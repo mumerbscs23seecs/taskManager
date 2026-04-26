@@ -6,9 +6,13 @@ const jwt = require('jsonwebtoken');
 const { Pool } = require('pg');
 
 const app = express();
-
+app.use(express.json());
 app.use(cors({
-  origin: 'https://taskmanager-frontend-6z0khyo58-mumerbscs23seecs-projects.vercel.app'
+  origin: [
+    'http://localhost:5173',
+    'http://localhost:3000',
+    'https://taskmanager-frontend-6z0khyo58-mumerbscs23seecs-projects.vercel.app'
+  ]
 }));
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL
@@ -120,6 +124,10 @@ app.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
 
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email/password required' });
+    }
+
     const result = await pool.query(
       'SELECT * FROM users WHERE email = $1',
       [email]
@@ -127,7 +135,13 @@ app.post('/login', async (req, res) => {
 
     const user = result.rows[0];
 
-    if (!user || !(await bcrypt.compare(password, user.password))) {
+    if (!user || !user.password) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    const match = await bcrypt.compare(password, user.password);
+
+    if (!match) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
@@ -138,7 +152,9 @@ app.post('/login', async (req, res) => {
     );
 
     res.json({ token });
+
   } catch (err) {
+    console.error("LOGIN ERROR:", err); // 🔥 THIS is key
     res.status(500).json({ error: 'Server error' });
   }
 });
