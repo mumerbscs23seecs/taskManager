@@ -7,9 +7,9 @@ const { Pool } = require('pg');
 
 const app = express();
 
-app.use(cors());
-app.use(express.json());
-
+app.use(cors({
+  origin: 'https://taskmanager-frontend-6z0khyo58-mumerbscs23seecs-projects.vercel.app'
+}));
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL
 });
