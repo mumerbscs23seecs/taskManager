@@ -8,16 +8,41 @@ const { Pool } = require('pg');
 const app = express();
 app.use(express.json());
 app.use(cors({
-  origin: [
-    'http://localhost:5173',
-    'http://localhost:3000',
-    'https://taskmanager-frontend-6z0khyo58-mumerbscs23seecs-projects.vercel.app'
-  ]
+  origin: (origin, callback) => {
+    const allowed = [
+      'http://localhost:5173',
+      'http://localhost:3000',
+    ];
+    if (!origin || allowed.includes(origin) || /\.vercel\.app$/.test(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  }
 }));
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL
 });
 
+async function initDb() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS users (
+      id SERIAL PRIMARY KEY,
+      email TEXT UNIQUE NOT NULL,
+      password TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS tasks (
+      id SERIAL PRIMARY KEY,
+      title TEXT NOT NULL,
+      done BOOLEAN DEFAULT false,
+      user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+      created_at TIMESTAMP DEFAULT NOW()
+    );
+  `);
+  console.log("Database ready");
+}
+
+initDb().catch(err => { console.error("DB init failed:", err); process.exit(1); });
 console.log("Server started");
 
 // ---------------- AUTH MIDDLEWARE ----------------
