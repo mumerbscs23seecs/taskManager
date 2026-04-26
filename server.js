@@ -1,4 +1,7 @@
 require('dotenv').config();
+const dns = require('dns');
+dns.setDefaultResultOrder('ipv4first');
+
 const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcrypt');
@@ -21,7 +24,8 @@ app.use(cors({
   }
 }));
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false }
 });
 
 async function initDb() {
@@ -42,7 +46,7 @@ async function initDb() {
   console.log("Database ready");
 }
 
-initDb().catch(err => { console.error("DB init failed:", err); process.exit(1); });
+initDb().catch(err => console.error("DB init failed:", err));
 console.log("Server started");
 
 // ---------------- AUTH MIDDLEWARE ----------------
